@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+
+# Training outputs
+runs/
+checkpoints/
+tb/
+*.pth
+*.log
+results.json
+
+# Exported models
+*.onnx
+model_ts.pt
+
+# Datasets / archives
+datasets/
+*.zip
+*.tar
+*.tar.gz
+
+DIV2K
+
+# Tooling
+.claude/
+srhc_infer/
+SRHCnet_old_photo_restoration_spec.md
+team17_checkpoint_and_DIV2K_training_spec.md
+TRAINING_STATUS.md
+metrics.csv

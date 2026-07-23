@@ -1,0 +1,8 @@
+torch>=2.1
+torchvision>=0.16
+huggingface_hub>=0.23
+numpy
+pillow
+pyyaml>=6.0
+tqdm>=4.66
+tensorboard>=2.14

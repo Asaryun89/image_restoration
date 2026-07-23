@@ -1,0 +1,101 @@
+# Team17 (SRC-B) DIV2K fine-tune reproduction — spec Part B.
+#
+# Initializes the full SRHCnet composite from the released post-stage-2
+# checkpoint (spec A.2: `params` container, strict load), then re-runs the
+# team's DIV2K fine-tune: official bicubic x4 pairs, alternating
+# L1/L2/SWT losses, progressive HR patches 320 -> 448 -> 768, channel
+# shuffle + mixing augmentation, Adam(0.9, 0.99) at lr 1e-5 cosine to
+# 1e-6, EMA 0.999. Val metric = Y-channel PSNR, 4-px border (challenge
+# protocol). Success criterion (spec B.7): final val PSNR >= baseline
+# - 0.02 dB, with gates moving < ~1%.
+#
+# Run `python tools/prepare_div2k.py --root data/DIV2K` once first — it
+# pulls the official DIV2K pairs from the Hugging Face mirror
+# (bezdarnost/DF2K-bicubic, 4-digit files verified pixel-identical to the
+# ETH originals) and pre-crops the training sub-images.
+run_name: team17_div2k_ft
+seed: 42
+
+data:
+  train_gt: data/DIV2K/DIV2K_train_HR_sub
+  train_lq: data/DIV2K/DIV2K_train_LR_bicubic_X4_sub
+  val_gt: data/DIV2K/DIV2K_valid_HR
+  val_lq: data/DIV2K/DIV2K_valid_LR_bicubic/X4
+  crop_size: 320          # fallback HR patch if `progressive` is removed
+  # Spec B.4: HR patches 320 -> 448 -> 768, ~50%/30%/20% of the budget
+  # (75k / 45k / 30k of the 150k iterations).
+  # Batch sizes are the spec's declared memory-driven knob: its example
+  # (8/4/1-2, A100 80G + grad ckpt) OOMs this 95G GPU with no grad
+  # checkpointing — measured peak ~94G at 8x320 — so halve to 4/2/1.
+  progressive:
+    - {epoch: 0,  crop_size: 320, batch_size: 4}
+    - {epoch: 25, crop_size: 448, batch_size: 2}
+    - {epoch: 40, crop_size: 768, batch_size: 1}
+  val_max_images: 100     # full official DIV2K val split
+  val_tile: 256           # LR-side tile for val inference (full 2K OOMs fp32)
+  val_tile_overlap: 32    # the winner's pipeline overlap
+  batch_size: 4
+  num_workers: 8
+  pin_memory: true
+  persistent_workers: true
+
+# Spec B.5 (definitions are the spec's declared interpretations; the
+# probabilities/alpha are this repo's assumptions — unpublished).
+augment:
+  channel_shuffle_prob: 0.5
+  mixup_prob: 0.2
+  mixup_alpha: 1.2
+
+model:
+  arch: srhcnet
+  upscale: 4
+  window_size: 16
+  embed_dim: 180
+  depths:    [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
+  num_heads: [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
+  compress_ratio: 3
+  squeeze_factor: 30
+  conv_scale: 0.01
+  overlap_ratio: 0.5
+  mlp_ratio: 2
+  drop_path_rate: 0.0     # fine-tuning a converged model; no stochastic depth
+  num_feat: 64
+  pretrained: checkpoints/17_SRHCnet_39000_final.pth   # strict full-composite load
+  srcnet:
+    width: 64
+    enc_blk_nums: [2, 2, 4, 8]
+    middle_blk_num: 12
+    dec_blk_nums: [2, 2, 2, 2]
+
+loss:
+  swt_hf_weight: 0.05     # spec B.4 default; SRC-B's exact SWT config unpublished
+
+optim:
+  lr: 1.0e-5              # report: initial lr 1e-5
+  betas: [0.9, 0.99]      # BasicSR Adam default (spec assumption)
+  weight_decay: 0.0       # plain Adam
+  lr_min: 1.0e-6          # cosine floor (decay schedule is a spec assumption)
+  warmup_iters: 0         # resuming a converged model — no warmup needed
+  grad_clip: 1.0
+  amp: true
+  ema_decay: 0.999
+
+train:
+  # Spec B.6 skeleton: total_iter 150000. Virtual epochs of 3000 iters
+  # (short enough that even the batch-8 phase, ~4026 batches per dataset
+  # pass, fills a full epoch) -> 50 epochs = 150k iters, phases 75k/45k/30k
+  # = exactly the 50/30/20 budget split, validating every 3000 iters.
+  epochs: 50
+  iters_per_epoch: 3000
+
+val_monitor: psnr_y       # challenge metric drives best-checkpoint selection
+
+log:
+  runs_dir: runs
+  log_interval: 100
+  sample_interval: 1
+  tensorboard: true
+
+checkpoint:
+  dir: checkpoints/team17_ft
+  periodic_every: 0
