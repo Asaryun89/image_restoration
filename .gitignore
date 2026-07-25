@@ -1,0 +1,51 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+
+# --- Model weights / checkpoints (large; ship out-of-band, see steps.md) ---
+checkpoints/
+*.pth
+*.pt
+*.safetensors
+*.ckpt
+*.onnx
+
+# --- Data & generated images ---
+input/
+output/
+result.png
+*_rlt.png
+# keep a small sample input for smoke tests:
+!test.png
+
+# --- Archives ---
+*.rar
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.tgz
+
+# --- Editor / OS cruft ---
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# --- Local tooling state ---
+.claude/
