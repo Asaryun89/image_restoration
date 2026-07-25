@@ -6,11 +6,14 @@ refiner, 156.8M params. Upscales RGB images exactly 4x.
 ## Contents
 - `models/` — self-contained architecture code (srhcnet, nafnet, tiling)
 - `infer.py` — CLI + `SRUpscaler` class for webapp embedding
-- `17_SRHCnet_39000_final.pth` — released composite weights (`params` key)
+- `best_psnr.pth` — released composite weights (`params` key)
+
+## Weight Install
+Google Drive: https://drive.google.com/drive/folders/1--RYVZn95QUnJvnckg7f5DIEQO8-mUnU?usp=sharing
 
 ## Quick start
     pip install -r requirements.txt
-    python infer.py --checkpoint 17_SRHCnet_39000_final.pth \
+    python infer.py --checkpoint checkpoints/best_psnr.pth \
         --input photo.png --output photo_x4.png
 
 ## Webapp
@@ -26,7 +29,7 @@ HTTP 413 rather than hanging.
 
 ## Webapp integration
     from infer import SRUpscaler
-    sr = SRUpscaler("17_SRHCnet_39000_final.pth", device="cuda")  # load ONCE at startup
+    sr = SRUpscaler("checkpoints/best_psnr.pth", device="cuda")  # load ONCE at startup
     out_pil = sr.upscale(in_pil)                                  # per request
 
 Notes:
