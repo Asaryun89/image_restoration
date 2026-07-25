@@ -8,7 +8,7 @@ refiner, 156.8M params. Upscales RGB images exactly 4x.
 - `infer.py` — CLI + `SRUpscaler` class for webapp embedding
 - `best_psnr.pth` — released composite weights (`params` key)
 
-## Weight Install
+## Weight Install and Demo Video
 Google Drive: https://drive.google.com/drive/folders/1--RYVZn95QUnJvnckg7f5DIEQO8-mUnU?usp=sharing
 
 ## Quick start
